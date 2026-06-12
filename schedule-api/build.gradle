@@ -25,6 +25,8 @@ dependencies {
 	// Swagger UI / OpenAPI 문서 (Spring Boot 4.x 호환은 3.0.x)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	// 테스트용 인메모리 DB (SQL 로그 검증 등 MySQL 없이 실행)
+	testRuntimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
