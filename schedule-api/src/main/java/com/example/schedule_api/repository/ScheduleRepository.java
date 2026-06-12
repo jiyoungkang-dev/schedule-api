@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,7 +22,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     /**
      * 목록 검색. artistId / categoryId 는 선택적 필터 (null 이면 조건 무시).
+     * artist, category 는 @EntityGraph 로 본문 쿼리에서 left join 으로 함께 조회 (N+1 방지).
+     * count 쿼리에는 적용되지 않으므로 페이징 카운트는 단독 쿼리로 나간다.
      */
+    @EntityGraph(attributePaths = {"artist", "category"})
     @Query("""
             select s from Schedule s
             where (:artistId is null or s.artist.id = :artistId)
