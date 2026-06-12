@@ -1,8 +1,10 @@
 package com.example.schedule_api.service;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.schedule_api.dto.PageResponse;
 import com.example.schedule_api.dto.ScheduleCreateRequest;
 import com.example.schedule_api.dto.ScheduleResponse;
 import com.example.schedule_api.dto.ScheduleUpdateRequest;
@@ -49,6 +51,14 @@ public class ScheduleService {
 
     public ScheduleResponse findById(Long id) {
         return ScheduleResponse.from(getSchedule(id));
+    }
+
+    /** 목록 검색. artistId / categoryId 는 선택적 필터. */
+    public PageResponse<ScheduleResponse> search(Long artistId, Long categoryId, Pageable pageable) {
+        return PageResponse.from(
+                scheduleRepository.search(artistId, categoryId, pageable)
+                        .map(ScheduleResponse::from)
+        );
     }
 
     @Transactional

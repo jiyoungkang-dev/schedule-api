@@ -2,6 +2,8 @@ package com.example.schedule_api.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,4 +18,16 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
      */
     @Query("select s from Schedule s join fetch s.artist join fetch s.category where s.id = :id")
     Optional<Schedule> findByIdWithArtistAndCategory(@Param("id") Long id);
+
+    /**
+     * 목록 검색. artistId / categoryId 는 선택적 필터 (null 이면 조건 무시).
+     */
+    @Query("""
+            select s from Schedule s
+            where (:artistId is null or s.artist.id = :artistId)
+              and (:categoryId is null or s.category.id = :categoryId)
+            """)
+    Page<Schedule> search(@Param("artistId") Long artistId,
+                          @Param("categoryId") Long categoryId,
+                          Pageable pageable);
 }
