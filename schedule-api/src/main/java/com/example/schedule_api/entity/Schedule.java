@@ -70,6 +70,18 @@ public class Schedule {
         this.category = category;
     }
 
+    /** 일정 내용 전체 수정. 더티 체킹으로 트랜잭션 커밋 시 UPDATE 가 나간다. */
+    public void update(String title, LocalDateTime scheduleDate, String location,
+                       ScheduleStatus status, String description, Artist artist, Category category) {
+        this.title = title;
+        this.scheduleDate = scheduleDate;
+        this.location = location;
+        this.status = status;
+        this.description = description;
+        this.artist = artist;
+        this.category = category;
+    }
+
     public Long getId() {
         return id;
     }
