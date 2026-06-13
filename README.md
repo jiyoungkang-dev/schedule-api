@@ -24,6 +24,28 @@
 - 전역 예외 처리로 일관된 에러 응답
 - `@EntityGraph` 기반 N+1 문제 해결
 
+## 아키텍처
+
+요청은 Controller → Service → Repository 순으로 흐르며, 각 계층은 명확히 분리되어 있다. Entity는 외부로 직접 노출되지 않고 응답 DTO로 변환되어 나간다.
+
+```mermaid
+flowchart LR
+    Client([Client])
+    Controller[Controller<br/>요청/응답, DTO 변환]
+    Service[Service<br/>비즈니스 로직, 트랜잭션]
+    Repository[Repository<br/>JPA 데이터 접근]
+    DB[(MySQL)]
+
+    Client -->|HTTP + JSON| Controller
+    Controller --> Service
+    Service --> Repository
+    Repository --> DB
+    DB --> Repository
+    Repository --> Service
+    Service -->|Response DTO| Controller
+    Controller -->|HTTP + JSON| Client
+```
+
 ## 데이터 모델
 
 Schedule이 Artist, Category와 각각 N:1 관계를 맺는다. 하나의 아티스트/카테고리는 여러 일정을 가질 수 있고, 각 일정은 정확히 한 아티스트와 한 카테고리에 속한다.
@@ -106,6 +128,35 @@ GET /api/schedules?artistId=1&categoryId=3&page=0&size=10&sort=scheduleDate,asc
 
 연관 엔티티는 객체가 아니라 `artistName`, `categoryName`처럼 평탄화된 필드로만 노출한다.
 
+### 일정 생성 처리 흐름
+
+일정 생성 시 요청의 `artistId`/`categoryId`로 연관 엔티티를 조회하고, 존재하지 않으면 404로 응답한다.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant Ctrl as ScheduleController
+    participant Svc as ScheduleService
+    participant Repo as Repository
+    participant DB as MySQL
+
+    C->>Ctrl: POST /api/schedules
+    Note over Ctrl: @Valid 요청 검증<br/>(실패 시 400)
+    Ctrl->>Svc: create(request)
+    Svc->>Repo: artist/category 조회
+    Repo->>DB: SELECT
+    alt 존재하지 않음
+        DB-->>Svc: empty
+        Svc-->>C: 404 NotFound
+    else 존재함
+        DB-->>Repo: Artist, Category
+        Svc->>Repo: Schedule 저장
+        Repo->>DB: INSERT
+        Svc-->>Ctrl: ScheduleResponse
+        Ctrl-->>C: 201 Created
+    end
+```
+
 ## 트러블슈팅: N+1 문제 해결
 
 일정 목록을 조회할 때, 응답 DTO 변환 과정에서 `schedule.getArtist().getName()`을 호출하는 순간 지연로딩(LAZY)이 초기화되며 **행마다 추가 SELECT가 발생**했다. 목록 1건 + 연관 엔티티 조회 N건 = 1+N 쿼리 문제다.
@@ -123,6 +174,12 @@ GET /api/schedules?artistId=1&categoryId=3&page=0&size=10&sort=scheduleDate,asc
 관련 통합 테스트: `src/test/java/.../service/ScheduleSearchTest.java` (H2 기반, MySQL 없이 실행 가능)
 
 ## 실행 방법
+
+> 소스 코드는 `schedule-api/` 하위에 있다. 아래 명령은 해당 폴더로 이동한 뒤 실행한다.
+
+```bash
+cd schedule-api
+```
 
 ### Docker (권장)
 
