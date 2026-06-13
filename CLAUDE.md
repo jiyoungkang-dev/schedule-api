@@ -36,6 +36,9 @@
 - **없는 id 조회는 404**. 서비스에서 조회 실패 시 명확한 예외를 던지고 404로 응답 (200에 빈 값 금지).
 - 잘못된 요청은 400, 권한/인증 문제는 401/403 등 상황에 맞는 상태코드를 쓴다.
 
+## Docker 구성 규칙
+- **컨테이너 구성은 `docker-compose`로 app + MySQL 8을 함께 띄운다.** app은 DB에 `db` 서비스명(`jdbc:mysql://db:3306/scheduledb`)으로 접속, 시크릿은 `.env`로 주입(`.env.example` 템플릿 제공, `.env`는 커밋 금지), db는 `healthcheck` 통과 후 app 기동(`depends_on: condition: service_healthy`), 데이터는 named volume에 보존, 호스트 포트 충돌 방지로 MySQL은 호스트 `3307`→컨테이너 `3306` 매핑.
+
 ## 커밋 메시지 규칙
 - **Conventional Commits 타입(feat, fix, chore, build 등)은 영어, 설명은 한국어.** 예: `build: springdoc-openapi 의존성 추가`
 
