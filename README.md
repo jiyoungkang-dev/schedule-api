@@ -1,10 +1,16 @@
-# schedule-api
+# 📅 schedule-api
 
 아티스트 콘텐츠 일정 관리 REST API. 아티스트별·카테고리별로 일정(콘서트, 음악방송, 팬미팅 등)을 등록·조회·관리한다.
 
 단일 테이블 CRUD를 넘어 **N:1 연관관계 설계와 N+1 문제 해결**까지 다룬 프로젝트로, 연관관계가 있는 도메인에서 JPA가 실제 SQL로 어떻게 동작하는지 확인하고 최적화하는 데 초점을 뒀다.
 
-## 기술 스택
+### ✨ 핵심 구현 포인트
+
+- **N+1 문제를 실제 SQL 로그로 진단하고 `@EntityGraph`로 단일 쿼리화** — 데이터 다양도에 따라 최악 1+2N까지 늘던 쿼리를 1건으로 축소
+- **N:1 연관관계를 정규화로 설계하고 응답은 평탄화 DTO로 분리** — Entity 직접 노출 없이 `artistName`/`categoryName`만 노출
+- **Docker 멀티스테이지 + Compose로 환경 독립 실행** — healthcheck로 DB 준비 후 앱 기동, 환경 변수로 자격 증명 주입
+
+## 🛠️ 기술 스택
 
 | 구분 | 사용 기술 |
 |---|---|
@@ -15,7 +21,7 @@
 | Test | JUnit 5, H2 (인메모리) |
 | Infra | Docker, Docker Compose |
 
-## 주요 기능
+## 🎯 주요 기능
 
 - 일정 CRUD (생성/단건 조회/수정/삭제)
 - 아티스트·카테고리 등록 및 목록 조회
@@ -24,7 +30,7 @@
 - 전역 예외 처리로 일관된 에러 응답
 - `@EntityGraph` 기반 N+1 문제 해결
 
-## 아키텍처
+## 🏗️ 아키텍처
 
 요청은 Controller → Service → Repository 순으로 흐르며, 각 계층은 명확히 분리되어 있다. Entity는 외부로 직접 노출되지 않고 응답 DTO로 변환되어 나간다.
 
@@ -46,7 +52,7 @@ flowchart LR
     Controller -->|HTTP + JSON| Client
 ```
 
-## 데이터 모델
+## 🗂️ 데이터 모델
 
 Schedule이 Artist, Category와 각각 N:1 관계를 맺는다. 하나의 아티스트/카테고리는 여러 일정을 가질 수 있고, 각 일정은 정확히 한 아티스트와 한 카테고리에 속한다.
 
@@ -77,7 +83,7 @@ erDiagram
 
 아티스트/카테고리 이름을 일정 테이블에 직접 저장하지 않고 별도 테이블로 분리(정규화)했다. 이름이 바뀌어도 참조 테이블 한 행만 수정하면 모든 일정에 반영된다.
 
-## API
+## 🔌 API
 
 Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
@@ -95,7 +101,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 ![Swagger UI](docs/images/swagger-ui.png)
 
-### 목록 조회 예시
+### 📋 목록 조회 예시
 
 ```
 GET /api/schedules?artistId=1&categoryId=3&page=0&size=10&sort=scheduleDate,asc
@@ -128,7 +134,7 @@ GET /api/schedules?artistId=1&categoryId=3&page=0&size=10&sort=scheduleDate,asc
 
 연관 엔티티는 객체가 아니라 `artistName`, `categoryName`처럼 평탄화된 필드로만 노출한다.
 
-### 일정 생성 처리 흐름
+### 🔄 일정 생성 처리 흐름
 
 일정 생성 시 요청의 `artistId`/`categoryId`로 연관 엔티티를 조회하고, 존재하지 않으면 404로 응답한다.
 
@@ -157,7 +163,7 @@ sequenceDiagram
     end
 ```
 
-## 트러블슈팅: N+1 문제 해결
+## 🔍 트러블슈팅: N+1 문제 해결
 
 일정 목록을 조회할 때, 응답 DTO 변환 과정에서 `schedule.getArtist().getName()`을 호출하는 순간 지연로딩(LAZY)이 초기화되며 **행마다 추가 SELECT가 발생**했다. 목록 1건 + 연관 엔티티 조회 N건 = 1+N 쿼리 문제다.
 
@@ -173,7 +179,7 @@ sequenceDiagram
 
 관련 통합 테스트: `src/test/java/.../service/ScheduleSearchTest.java` (H2 기반, MySQL 없이 실행 가능)
 
-## 실행 방법
+## 🚀 실행 방법
 
 > 소스 코드는 `schedule-api/` 하위에 있다. 아래 명령은 해당 폴더로 이동한 뒤 실행한다.
 
@@ -181,7 +187,7 @@ sequenceDiagram
 cd schedule-api
 ```
 
-### Docker (권장)
+### 🐳 Docker (권장)
 
 ```bash
 # 1. 환경 변수 설정
@@ -197,7 +203,7 @@ docker-compose up --build
 
 ![Docker 컨테이너 실행](docs/images/docker-containers.png)
 
-### 로컬 실행
+### 💻 로컬 실행
 
 로컬 MySQL에 `scheduledb` 스키마를 만든 뒤:
 
@@ -206,7 +212,7 @@ docker-compose up --build
 DB_PASSWORD=yourpassword ./gradlew bootRun
 ```
 
-## 설계 노트
+## 📝 설계 노트
 
 - **계층 분리**: Controller -> Service -> Repository
 - **DTO 변환**: Entity를 직접 노출하지 않고 `record` 응답 DTO로 변환 (`from()` 정적 팩토리)
